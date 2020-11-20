@@ -1,36 +1,32 @@
-use common::*;
-
-use holmes::client::*;
-use holmes::native_types::*;
+#[macro_use]
+extern crate holmes;
+use holmes::simple::*;
 
 #[test]
 pub fn new_predicate_basic() {
-  server_single(&|client: &mut Client| { client_exec!(client, { 
-    predicate!(test_pred(string, blob, uint64))
-  })})
-}
-
-#[test]
-pub fn double_register() {
-  server_single(&|client: &mut Client| { client_exec!(client, { 
-    predicate!(test_pred(string, blob, uint64));
-    predicate!(test_pred(string, blob, uint64))
-  })})
+    single(&|holmes: &mut Engine, _| {
+        holmes_exec!(holmes, {
+            predicate!(test_pred(string, bytes, uint64))
+        })
+    })
 }
 
 #[test]
 pub fn double_register_incompat() {
-  server_single(&|client: &mut Client| { client_exec!(client, { 
-    predicate!(test_pred(string, blob, uint64));
-    should_fail(predicate!(test_pred(string, string, string)))
-  })})
+    single(&|holmes: &mut Engine, _| {
+        holmes_exec!(holmes, {
+            predicate!(test_pred(string, bytes, uint64));
+            should_fail(predicate!(test_pred(string, string, string)))
+        })
+    })
 }
 
 #[test]
-pub fn pred_persist() {
-  server_wrap(vec![&|client : &mut Client| {
-    predicate!(client, test_pred(string, blob, uint64)).unwrap();
-  }, &|client : &mut Client| {
-    predicate!(client, test_pred(string, string, string)).unwrap_err();
-  }]);
+pub fn double_register_compat() {
+    single(&|holmes: &mut Engine, _| {
+        holmes_exec!(holmes, {
+            predicate!(test_pred(string, bytes, uint64));
+            predicate!(test_pred(string, bytes, uint64))
+        })
+    })
 }

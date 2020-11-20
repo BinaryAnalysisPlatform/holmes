@@ -1,29 +1,54 @@
+sudo: false
 language: rust
-rust: 1.0.0
+cache: cargo
 addons:
-  postgresql: 9.3
+  postgresql: 9.5
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+      - postgresql-9.5
+      - cmake
+    sources:
+      - kalakris-cmake
 
-before_install:
-  - yes | sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update
-install:
-  - sudo apt-get install g++-4.8 gcc-4.8 git
-  - git clone https://github.com/kentonv/capnproto.git
-  - export CC=gcc-4.8
-  - export CXX=g++-4.8
-  - cd capnproto/c++
-  - ./setup-autotools.sh
-  - autoreconf -i
-  - ./configure && make -j5 && sudo make install && cd ../..
+rust:
+  - nightly
+  - beta
+  - stable
+
+before_script:
+  # Import the location of pg_ctl
+  - |
+      export PATH=$PATH:/usr/lib/postgresql/9.5/bin
+  # Activate a clean postgres database with a holmes user
+  - |
+      export HOLMES_PG_SOCK_DIR=`tools/pg.bash holmes`
+  # Install travis-cargo for doc upload
+  - |
+      pip install 'travis-cargo<0.2' --user &&
+      export PATH=$HOME/.local/bin:$PATH
+  # Install cargo-travis and rustfmt
+  - |
+      (cargo install cargo-travis || true) &&
+      export PATH=$HOME/.cargo/bin:$PATH
+  # Create the holmes storage directory
+  - mkdir -p $HOME/.holmes
+
+script:
+  - cargo build
+  - cargo test
+  - travis-cargo --only stable doc
+#  - test $TRAVIS_RUST_VERSION != "stable" || cargo fmt -- --write-mode diff
 
 after_success:
-  - sudo apt-get install libcurl4-openssl-dev libelf-dev libdw-dev
-  - wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
-  - tar xzf master.tar.gz
-  - mkdir kcov-master/build
-  - cd kcov-master/build
-  - cmake ..
-  - make
-  - sudo make install
-  - cd ../..
-  - kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/out target/kcov target/debug/lib-*
+  - travis-cargo --only stable doc-upload
+  - test $TRAVIS_RUST_VERSION != "stable" || cargo coveralls
+
+env:
+  global:
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+    # Encrypted GH_TOKEN
+    - secure: "awK80V+34o170L1R6veE45eoDtzzVqxG4d1FLZxleTpOw41YsFczcCNxsUJPo0u60P24z0GRpMW7bB0QfSbsnk9zYNQ/iQTywysaqeCBLl5tpH2ESw2JRB27JD88j3WfZ2duazyJKERy7O9IPdOWlCdlw1g5ATIJMs+casI7Ces="

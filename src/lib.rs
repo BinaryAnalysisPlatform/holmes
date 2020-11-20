@@ -1,20 +1,31 @@
-extern crate capnp;
-extern crate capnp_rpc;
+//! Holmes
+//!
+//! Holmes is a Datalog inspired system for binding codependent analyses
+//! together.
+//!
+#![warn(missing_docs)]
+#[macro_use]
+extern crate lazy_static;
+extern crate sha2;
 extern crate postgres;
-extern crate postgres_array;
+extern crate fallible_iterator;
+extern crate r2d2;
+extern crate r2d2_postgres;
 extern crate rustc_serialize;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate error_chain;
+extern crate tokio_core;
+extern crate futures;
 
-pub mod server;
-pub mod fact_db;
-pub mod pg_db;
+extern crate env_logger;
+extern crate url;
+
+pub mod pg;
 pub mod engine;
+pub mod edsl;
+pub mod simple;
 
-pub mod holmes_capnp {
-  include!(concat!(env!("OUT_DIR"), "/holmes_capnp.rs"));
-}
-
-pub mod native_types;
-mod rpc_server;
-pub mod server_control;
-
-pub mod client;
+pub use engine::{Engine, Error, ErrorKind, Result};
+pub use pg::PgDB;

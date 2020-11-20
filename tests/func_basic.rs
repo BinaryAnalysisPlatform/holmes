@@ -1,15 +1,14 @@
-use common::*;
-
-use holmes::client::*;
-use holmes::native_types::*;
+#[macro_use]
+extern crate holmes;
+use holmes::simple::*;
 
 #[test]
 pub fn reg_func() {
-  server_single(&|client : &mut Client| {
-    func!(client,
-      let test_func : [uint64] -> [uint64] =
-        |_v : Vec<HValue>| {
-          vec![42.to_hvalue()]
-        }).unwrap();
-  })
+    single(&|holmes: &mut Engine, _| {
+        func!(holmes,
+      let test_func : uint64 -> uint64 =
+        |_v : &u64| {
+          42 as u64
+        })
+    })
 }
